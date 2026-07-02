@@ -1,11 +1,12 @@
-// Aron Feingold, November 2020
+// Aron Feingold, June 2026
 
-#include <Wire.h>
-#include "DS3231.h"
 #include <Adafruit_NeoPixel.h>
 
+#include <ESP8266WiFi.h>
+#include <ezTime.h>
+
 // Which pin on the Arduino is connected to the NeoPixels?
-#define PIN        6
+#define PIN    D4
 
 // When setting up the NeoPixel library, we tell it how many pixels,
 // and which pin to use to send signals. Note that for older NeoPixel
@@ -13,37 +14,50 @@
 // strandtest example for more information on possible values.
 Adafruit_NeoPixel pixels(63, PIN, NEO_GRB + NEO_KHZ800);
 
-#define DELAYVAL 200 // Time (in milliseconds) to pause between pixels
+#define DELAYVAL 200 // Time (in milliseconds) to pause between pixels when testing the clock
 
 uint32_t colour;
-RTClib RTC;
+//RTClib RTC1;
+
+Timezone UK;
 
 void setup()
 {
-  Wire.begin();
 
-  pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
+   Serial.begin(115200);
 
-  Serial.begin(9600);
+  WiFi.begin("FeingoldWiFi IoT", "Edgware2016");
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(500);
+      Serial.print(".");
+    }
+  Serial.println("\nWiFi connected.");
 
-  colour = pixels.Color(30, 75, 30);
+  waitForSync();
+  UK.setLocation("Europe/London");
+
+  pixels.begin(); // INITIALIZE NeoPixel strip object
+  colour = pixels.Color(25, 65, 20);
 
   test_the_clock();
 }
 
 void loop()
 {
+  Serial.println("WordClock");
+
   pixels.clear(); // Set all pixel colors to 'off'
 
-  DateTime now = RTC.now(); // Get the time
-
-  int current_time_h = now.hour();
-  int current_time_m = now.minute();
+  // Get the time
+  events();
+  int current_time_h = UK.hour();
+  int current_time_m = UK.minute();
 
   // Making colour change at night
   if (current_time_h >= 22 || current_time_h <= 6)
   {
-    colour = pixels.Color(125,105,0);
+    colour = pixels.Color(110, 100, 0);
   }
   else
   {
@@ -62,7 +76,7 @@ void loop()
 
   show_time(current_time_h, current_time_m_r);
 
-  delay(20000);
+  delay(10000);
 }
 
 
@@ -220,7 +234,7 @@ void show_time(int current_time_h, int current_time_m_r)
     show_LEDs(colour, 8, 11);
   }
 
-  else if (current_time_h == 12)
+  else if (current_time_h == 12 || current_time_h == 0)
   {
     // Twelve
     show_LEDs(colour, 0, 3);
@@ -359,5 +373,4 @@ void test_the_clock()
   show_LEDs(colour, 4, 7);
   delay(DELAYVAL);
   pixels.clear();
-
 }
