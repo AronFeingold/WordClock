@@ -1,4 +1,4 @@
-# WordClock 🕐
+# WordClock
 
 A word clock designed and built entirely from scratch — hardware and software.
 
